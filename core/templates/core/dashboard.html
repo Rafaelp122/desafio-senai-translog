@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Dashboard Principal</h2>
+  
+    <div class="d-flex align-items-center">
+      <span class="me-2">Olá, <strong>{{ user.username }}</strong>!</span>
+      
+      <form action="{% url 'logout' %}" method="post" class="d-inline">
+        {% csrf_token %}
+          
+        <button type"submit" class="btn btn-link p-0 m-0" style="vertical-align: baseline;">
+          (Sair)
+        </button>
+      </form>
+      
+    </div>
+  </div>
+
+  <p>Bem-vindo ao sistema de controle da TransLog!</p>
+
+  <div class="alert alert-info" role="alert">
+    (Em breve: Alertas de manutenção e menus)
+  </div>
+
+{% endblock content %}
