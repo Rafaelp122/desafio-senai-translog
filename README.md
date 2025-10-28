@@ -66,7 +66,7 @@ cd translog
 python -m venv venv
 
 # Ativar no Windows
-.env\Scriptsctivate
+.\venv\Scripts\activate
 
 # Ativar no Linux/Mac
 source venv/bin/activate
@@ -84,13 +84,13 @@ pip install -r requirements.txt
 
 ### 4. Configure o Banco de Dados (Migrations)
 
-O Django usará o SQLite por padrão, o que é perfeito para este desafio.
+O Django usará o SQLite por padrão. Todas as migrações (incluindo a de criação de grupos) já estão no repositório.
 
 ```bash
-# Gera os arquivos de migração (baseado nos models.py)
-python manage.py makemigrations
-
-# Executa as migrações e cria as tabelas no banco
+# Executa TODAS as migrações em ordem:
+# 1. Cria as tabelas dos models (0001_...)
+# 2. Adiciona os validadores (0002_...)
+# 3. CRIA AUTOMATICAMENTE os Grupos e Permissões (0003_...)
 python manage.py migrate
 ```
 
@@ -107,21 +107,21 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### 7. Configure os Grupos de Usuários
+### 7. (Opcional) Crie Usuários de Teste
 
-Para o sistema funcionar, você **DEVE** criar os perfis de acesso:
+Graças à migração de dados (Passo 4), os 3 perfis (`Administrador`, `Mecanico`, `Motorista`) e suas permissões **já foram criados automaticamente**.
 
-1. Acesse o painel admin: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)  
-2. Faça login com o superusuário criado.  
-3. Vá para **Grupos** e crie **3 grupos** com os nomes exatos:
-   - Administrador
-   - Mecanico
-   - Motorista  
-4. Para cada grupo, atribua as permissões corretas (ex: *Mecânico deve ter a permissão core | manutencao | Can add manutencao*).
+Se desejar, você pode criar usuários de teste para popular o sistema:
+
+1.  Acesse o painel admin: `http://127.0.0.1:8000/admin/`
+2.  Faça login com o superusuário criado no Passo 5.
+3.  Vá para **Users** -> **Add User**.
+4.  Crie seus usuários (ex: `mecanico_chefe`, `motorista_jose`, `admin_frota`) com uma senha de teste.
+5.  Ao salvar cada um, associe-o ao seu respectivo grupo (que já estará na lista de "Groups" para você escolher).
 
 ## 👥 Estrutura de Usuários
 
-O sistema opera com **3 níveis de permissão** pré-definidos:
+O sistema opera com **3 níveis de permissão** pré-definidos (criados automaticamente pela migração `0003_create_groups.py`):
 
 ### Administrador
 
