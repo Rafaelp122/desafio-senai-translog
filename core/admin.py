@@ -68,6 +68,23 @@ class MaintenanceRecordAdmin(admin.ModelAdmin):
     # Otimiza a seleção de FKs, substituindo <select> por um campo de busca.
     autocomplete_fields = ('vehicle', 'responsible_mechanic')
 
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Personaliza os resultados da busca do autocomplete.
+        """
+        # Deixa o Django fazer a busca padrão primeiro
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # Pega o nome do campo que está fazendo a busca
+        field_name = request.GET.get('field_name')
+
+        # Se for o campo 'responsible_mechanic'...
+        if field_name == 'responsible_mechanic':
+            # ...filtra o queryset para incluir APENAS usuários do grupo 'Mecanico'
+            queryset = queryset.filter(groups__name='Mecanico')
+
+        return queryset, use_distinct
+
     @admin.display(description='Custo Total')
     def get_total_cost(self, obj: MaintenanceRecord) -> float:
         """
@@ -89,3 +106,18 @@ class MileageRecordAdmin(admin.ModelAdmin):
 
     # Otimiza a seleção de Veículo e Motorista (User)
     autocomplete_fields = ('vehicle', 'driver')
+
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Personaliza os resultados da busca do autocomplete.
+        """
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        field_name = request.GET.get('field_name')
+
+        # Se for o campo 'driver'...
+        if field_name == 'driver':
+            # ...filtra o queryset para incluir APENAS usuários do grupo 'Motorista'
+            queryset = queryset.filter(groups__name='Motorista')
+
+        return queryset, use_distinct
