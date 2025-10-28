@@ -1,27 +1,97 @@
 {% extends "base.html" %}
 
 {% block content %}
+  
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Dashboard Principal</h2>
-  
+    
     <div class="d-flex align-items-center">
-      <span class="me-2">Olá, <strong>{{ user.username }}</strong>!</span>
+        <span class="me-2">Olá, <strong>{{ user.username }}</strong>!</span>
+        
+        <form action="{% url 'logout' %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type"submit" class="btn btn-link p-0 m-0" style="vertical-align: baseline;">
+                (Sair)
+            </button>
+        </form>
+    </div>
+  </div>
+  
+  <p class="lead">Bem-vindo ao sistema de controle da TransLog!</p>
+  
+  <hr>
+
+  <div class="mb-4">
+    <h4>Ações Rápidas</h4>
+    <div class="list-group">
       
-      <form action="{% url 'logout' %}" method="post" class="d-inline">
-        {% csrf_token %}
-          
-        <button type"submit" class="btn btn-link p-0 m-0" style="vertical-align: baseline;">
-          (Sair)
-        </button>
-      </form>
-      
+      {% if perms.core.add_mileagerecord %}
+        <a href="#" class="list-group-item list-group-item-action">
+          Registrar Quilometragem (RF005)
+        </a>
+      {% endif %}
+
+      {% if perms.core.add_maintenancerecord %}
+        <a href="#" class="list-group-item list-group-item-action">
+          Registrar Nova Manutenção (RF004)
+        </a>
+      {% endif %}
+
+      {% if perms.core.add_vehicle %}
+        <a href="#" class="list-group-item list-group-item-action">
+          Cadastrar Novo Veículo (RF003)
+        </a>
+      {% endif %}
+
+      {% if perms.core.view_vehicle %}
+        <a href="#" class="list-group-item list-group-item-action">
+          Ver Frota Completa
+        </a>
+      {% endif %}
+
     </div>
   </div>
 
-  <p>Bem-vindo ao sistema de controle da TransLog!</p>
 
-  <div class="alert alert-info" role="alert">
-    (Em breve: Alertas de manutenção e menus)
+  <div class="mb-4">
+    <h4><span class="badge bg-danger">!</span> Alertas de Revisão</h4>
+    
+    {% if alert_list %}
+      <div class="list-group">
+        
+        {% for item in alert_list %}
+          <div class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">
+                {{ item.vehicle.make }} {{ item.vehicle.model }} ({{ item.vehicle.plate }})
+              </h5>
+              
+              {% if item.km_faltando <= 0 %}
+                <span class="badge bg-danger rounded-pill">
+                  ATRASADO ({{ item.km_faltando|floatformat:0 }} km)
+                </span>
+              {% else %}
+                <span class="badge bg-warning rounded-pill">
+                  PRÓXIMO (Faltam {{ item.km_faltando|floatformat:0 }} km)
+                </span>
+              {% endif %}
+            </div>
+            
+            <p class="mb-1">
+              Última revisão em: {{ item.vehicle.maintenance_records.first.date|default:"N/A" }}
+              (Próxima em {{ item.proxima_revisao_km|floatformat:0 }} km)
+            </p>
+            <small>KM Atual: {{ item.vehicle.current_mileage|floatformat:0 }} km</small>
+            
+          </div>
+        {% endfor %}
+        
+      </div>
+    {% else %}
+      <div class="alert alert-success" role="alert">
+        Nenhum veículo está próximo da revisão. Bom trabalho!
+      </div>
+    {% endif %}
   </div>
 
 {% endblock content %}
