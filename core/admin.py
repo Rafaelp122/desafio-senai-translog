@@ -27,6 +27,8 @@ class VehicleAdmin(admin.ModelAdmin):
     # Adiciona filtros na barra lateral para facilitar a navegação
     list_filter = ('make', 'year')
 
+    filter_horizontal = ('assigned_drivers',)
+
 
 @admin.register(MaintenanceRecord)
 class MaintenanceRecordAdmin(admin.ModelAdmin):

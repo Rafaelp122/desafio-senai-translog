@@ -28,21 +28,31 @@ class Vehicle(models.Model):
     )
 
     current_mileage = models.IntegerField(
-        default=0, 
+        default=0,
         verbose_name="Quilometragem Atual",
         validators=[MinValueValidator(0)]
     )
 
     # Define o ciclo padrão de manutenção (ex: a cada 10.000 km)
     maintenance_interval_km = models.IntegerField(
-        default=10000, 
+        default=10000,
         verbose_name="Intervalo de Revisão (KM)",
         validators=[MinValueValidator(0)] # Intervalo não pode ser 0 ou negativo
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True, 
+        auto_now_add=True,
         verbose_name="Data de Cadastro"
+    )
+
+    assigned_drivers = models.ManyToManyField(
+        User,
+        related_name="assigned_vehicles",
+        blank=True,  # Um veículo pode não ter nenhum motorista atribuído
+
+        # Filtra o Admin para mostrar APENAS usuários
+        # que pertencem ao grupo 'Motorista'.
+        limit_choices_to={'groups__name': "Motorista"}
     )
 
     def __str__(self) -> str:

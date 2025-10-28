@@ -8,7 +8,6 @@ def create_groups_and_permissions(apps, schema_editor):
     """
 
     # --- Modelos Relevantes ---
-    # Carregamos as versões históricas dos modelos
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
     ContentType = apps.get_model('contenttypes', 'ContentType')
@@ -17,15 +16,15 @@ def create_groups_and_permissions(apps, schema_editor):
     motorista_perms_codenames = [
         'add_mileagerecord',
         'view_mileagerecord',
-        'view_vehicle',
     ]
     motorista_permissions = Permission.objects.filter(
         codename__in=motorista_perms_codenames
     )
 
     motorista_group, created = Group.objects.get_or_create(name='Motorista')
-    if created:
-        motorista_group.permissions.set(motorista_permissions)
+    # O .set() é 'idempotente' - ele limpa e define as permissões corretas
+    # independentemente do 'created'.
+    motorista_group.permissions.set(motorista_permissions)
 
     # --- Permissões do Mecânico ---
     mecanico_perms_codenames = [
@@ -39,14 +38,13 @@ def create_groups_and_permissions(apps, schema_editor):
     )
 
     mecanico_group, created = Group.objects.get_or_create(name='Mecanico')
-    if created:
-        mecanico_group.permissions.set(mecanico_permissions)
+    mecanico_group.permissions.set(mecanico_permissions)
 
     # --- Permissões do Administrador ---
     core_models = ['vehicle', 'maintenancerecord', 'mileagerecord']
 
     core_content_types = ContentType.objects.filter(
-        app_label='core', 
+        app_label='core',
         model__in=core_models
     )
 
@@ -55,8 +53,7 @@ def create_groups_and_permissions(apps, schema_editor):
     )
 
     admin_group, created = Group.objects.get_or_create(name='Administrador')
-    if created:
-        admin_group.permissions.set(admin_permissions)
+    admin_group.permissions.set(admin_permissions)
 
 
 def remove_groups_and_permissions(apps, schema_editor):
