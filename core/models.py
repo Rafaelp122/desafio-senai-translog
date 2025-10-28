@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 
 
 class Vehicle(models.Model):
@@ -18,21 +19,29 @@ class Vehicle(models.Model):
     )
     make = models.CharField(max_length=50, verbose_name="Marca")
     model = models.CharField(max_length=50, verbose_name="Modelo")
-    year = models.IntegerField(verbose_name="Ano de Fabricação")
+
+    year = models.IntegerField(
+        verbose_name="Ano de Fabricação",
+        # Ano 1886 foi do primeiro carro, então 0 é seguro,
+        # mas 1886 seria mais preciso. Vamos usar 0 por simplicidade.
+        validators=[MinValueValidator(0)]
+    )
 
     current_mileage = models.IntegerField(
-        default=0,
-        verbose_name="Quilometragem Atual"
+        default=0, 
+        verbose_name="Quilometragem Atual",
+        validators=[MinValueValidator(0)]
     )
 
     # Define o ciclo padrão de manutenção (ex: a cada 10.000 km)
     maintenance_interval_km = models.IntegerField(
-        default=10000,
-        verbose_name="Intervalo de Revisão (KM)"
+        default=10000, 
+        verbose_name="Intervalo de Revisão (KM)",
+        validators=[MinValueValidator(0)] # Intervalo não pode ser 0 ou negativo
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True,
+        auto_now_add=True, 
         verbose_name="Data de Cadastro"
     )
 
@@ -55,7 +64,6 @@ class MaintenanceRecord(models.Model):
     vehicle = models.ForeignKey(
         Vehicle,
         on_delete=models.CASCADE,
-        # related_name permite acesso reverso: meu_veiculo.maintenance_records.all()
         related_name="maintenance_records",
         verbose_name="Veículo"
     )
@@ -68,32 +76,35 @@ class MaintenanceRecord(models.Model):
     date = models.DateField(verbose_name="Data da Manutenção")
     description = models.TextField(verbose_name="Descrição do Serviço")
 
-    # Quilometragem do veículo no momento exato da manutenção
     mileage_at_maintenance = models.IntegerField(
-        verbose_name="KM no momento da Manutenção"
+        verbose_name="KM no momento da Manutenção",
+        validators=[MinValueValidator(0)]
     )
 
     parts_cost = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, verbose_name="Custo das Peças"
+        max_digits=10, decimal_places=2, default=0, verbose_name="Custo das Peças",
+        validators=[MinValueValidator(0.00)]
     )
 
     labor_cost = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, verbose_name="Custo Mão de Obra"
+        max_digits=10, decimal_places=2, default=0, verbose_name="Custo Mão de Obra",
+        validators=[MinValueValidator(0.00)]
     )
 
-    # Se o mecânico (Usuário) for excluído, o registro de manutenção
-    # permanece, mas este campo fica nulo.
     responsible_mechanic = models.ForeignKey(
-        User,
+        User, 
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name="Mecânico Responsável"
     )
 
+    def get_total_cost(self) -> float:
+        """Retorna a soma dos custos de peças e mão de obra."""
+        return self.parts_cost + self.labor_cost
+
     def __str__(self) -> str:
         """Retorna uma representação em string do registro."""
-        # 'get_maintenance_type_display' usa o valor legível ('Preventiva')
         return f"{self.get_maintenance_type_display()} em {self.vehicle.plate} - {self.date}"
 
 
@@ -110,6 +121,7 @@ class MileageRecord(models.Model):
         related_name="mileage_records",
         verbose_name="Veículo"
     )
+
     driver = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -117,28 +129,25 @@ class MileageRecord(models.Model):
         related_name="mileage_logs",
         verbose_name="Motorista"
     )
+
     date_recorded = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Data do Registro"
     )
-    mileage = models.IntegerField(verbose_name="Quilometragem Registrada")
+
+    mileage = models.IntegerField(
+        verbose_name="Quilometragem Registrada",
+        validators=[MinValueValidator(0)]
+    )
 
     def save(self, *args, **kwargs) -> None:
         """
         Sobrescreve o 'save' para atualizar a quilometragem do veículo (RF005).
-
-        Sempre que um novo registro de KM é salvo, este método verifica
-        se a quilometragem registrada é maior que a 'current_mileage'
-        do veículo e, em caso afirmativo, atualiza o veículo.
         """
-
-        # Regra de Negócio: Garante que a quilometragem do veículo
-        # nunca seja atualizada para um valor menor que o atual.
         if self.mileage > self.vehicle.current_mileage:
             self.vehicle.current_mileage = self.mileage
-            self.vehicle.save()  # Atualiza o objeto Vehicle relacionado
+            self.vehicle.save() 
 
-        # Chama o 'save' original para salvar este objeto MileageRecord
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
