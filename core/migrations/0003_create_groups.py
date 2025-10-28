@@ -72,7 +72,7 @@ def remove_groups_and_permissions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0001_initial'),
+        ('core', '0002_alter_maintenancerecord_labor_cost_and_more'),
         # Definimos dependências explícitas para garantir
         # que as permissões de auth já existam.
         ('auth', '0001_initial'),
