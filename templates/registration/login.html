@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Login - TransLog Express</h2>
+
+                {% if form.errors %}
+                  <div class="alert alert-danger" role="alert">
+                    Seu nome de usuário ou senha estão incorretos. 
+                    Por favor, tente novamente.
+                  </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}" novalidate>
+                    
+                    {% csrf_token %}
+                    
+                    {{ form|crispy }}
+                    
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
