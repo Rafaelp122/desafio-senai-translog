@@ -144,5 +144,54 @@ MESSAGE_TAGS = {
     messages.INFO: 'alert-info',
     messages.SUCCESS: 'alert-success',
     messages.WARNING: 'alert-warning',
-    messages.ERROR: 'alert-danger', # (A MÁGICA ESTÁ AQUI)
+    messages.ERROR: 'alert-danger',  # (A MÁGICA ESTÁ AQUI)
+}
+
+# Configuração dos Loggings
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,  # mantém os loggers padrão do Django
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} [{name}] {pathname}:{lineno:d} {message}',  # Adicionei caminho e linha
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} [{name}] {message}',  # Adicionei o nome do logger
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',  # Formato simples para o console
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            # Garante que o ficheiro de log fique na raiz do projeto
+            'filename': os.path.join(BASE_DIR, 'django.log'), 
+            'formatter': 'verbose',  # Formato detalhado para o ficheiro
+        },
+    },
+    'loggers': {
+        # Logger padrão do Django (ex: requisições HTTP)
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',  # Mostra INFO, WARNING, ERROR, CRITICAL
+            'propagate': True,  # Permite que o logger 'root' também capture
+        },
+        # Logger específico para a NOSSA aplicação 'core'
+        'core': { # <-- ALTERADO DE 'meu_app' PARA 'core'
+            'handlers': ['console', 'file'],
+            'level': 'INFO',  # Mostra INFO e acima gerados pelo nosso app
+                              # Mude para 'DEBUG' se precisar de mais detalhes
+            'propagate': False,  # Impede que a mensagem apareça duas vezes
+        },
+    },
+    # (Opcional) Logger Raiz - captura tudo o que não foi capturado acima
+    # 'root': {
+    #     'handlers': ['console'],
+    #     'level': 'WARNING', # Por defeito, mostra apenas WARNING e acima
+    # },
 }
