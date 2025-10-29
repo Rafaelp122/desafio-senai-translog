@@ -1,7 +1,10 @@
 import logging
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Vehicle, MaintenanceRecord
+from django.urls import reverse_lazy
+from django.contrib import messages
+from django.views.generic import TemplateView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from .models import Vehicle, MaintenanceRecord, MileageRecord
+from .forms import MileageRecordForm
 
 # Obtém o logger para este módulo ('core.views')
 logger = logging.getLogger(__name__)
@@ -98,3 +101,90 @@ class DashboardPageView(LoginRequiredMixin, TemplateView):
         )
 
         return context
+
+
+#  --- View para Registar KM (RF005) ---
+class MileageRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """
+    View baseada em classe para a criação de novos registos de quilometragem.
+
+    Acessível apenas por utilizadores autenticados (`LoginRequiredMixin`)
+    que possuam a permissão 'core.add_mileagerecord' (`PermissionRequiredMixin`),
+    tipicamente atribuída apenas ao grupo 'Motorista'.
+
+    Utiliza a `CreateView` genérica do Django para simplificar o processo
+    de exibição e validação do formulário `MileageRecordForm`.
+    """
+    model = MileageRecord             # Define o modelo alvo da criação
+    form_class = MileageRecordForm    # Especifica o formulário a ser utilizado
+    template_name = 'core/mileage_record_form.html'  # Caminho para o template HTML
+
+    # Permissão necessária para aceder a esta view (RF002)
+    permission_required = 'core.add_mileagerecord'
+
+    # URL ('name') para redirecionamento após a criação bem-sucedida do registo
+    success_url = reverse_lazy('dashboard')
+
+    def get_form_kwargs(self):
+        """
+        Adiciona o utilizador atual (`request.user`) aos argumentos (kwargs)
+        passados para o inicializador (`__init__`) do `MileageRecordForm`.
+
+        Isto permite que o formulário filtre dinamicamente o campo 'vehicle'
+        para mostrar apenas os veículos atribuídos (`assigned_drivers`)
+        ao motorista autenticado.
+        """
+        kwargs = super().get_form_kwargs() # Obtém os argumentos padrão da CreateView
+        kwargs['user'] = self.request.user # Adiciona o 'user' ao dicionário
+        return kwargs
+
+    def form_valid(self, form):
+        """
+        Executado quando o formulário é submetido e considerado válido.
+
+        Define automaticamente o campo 'driver' do `MileageRecord` como
+        sendo o utilizador autenticado antes de salvar o objeto no banco de dados.
+        Adiciona mensagens de feedback (sucesso) e regista logs informativos.
+        """
+        # Associa o registo de KM ao utilizador logado (motorista)
+        # form.instance refere-se ao objeto MileageRecord que está a ser criado,
+        # ainda antes de ser salvo no banco de dados.
+        form.instance.driver = self.request.user
+
+        # Mensagem de sucesso a ser exibida na próxima página (dashboard)
+        messages.success(
+            self.request,
+            f"Quilometragem para o veículo {form.instance.vehicle.plate} "
+            f"registada com sucesso ({form.instance.mileage} KM)."
+        )
+        # Log informativo para registo interno da operação bem-sucedida
+        logger.info(
+            f"Utilizador {self.request.user} registou KM {form.instance.mileage} "
+            f"para o veículo {form.instance.vehicle.plate}."
+        )
+
+        # Chama o método 'form_valid' da classe pai (CreateView),
+        # que efetivamente salva o 'form.instance' no banco de dados
+        # e retorna uma resposta HTTP de redirecionamento para 'success_url'.
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """
+        Executado quando o formulário é submetido mas considerado inválido.
+
+        Adiciona uma mensagem de erro genérica para o utilizador e
+        regista os erros detalhados de validação do formulário nos logs (nível warning).
+        """
+        messages.error(
+            self.request,
+            "Erro ao registar quilometragem. Verifique os dados no formulário."
+        )
+        # Log de aviso com detalhes dos erros de validação, útil para depuração
+        logger.warning(
+            f"Tentativa falhada de registo de KM pelo utilizador {self.request.user}. "
+            f"Erros do formulário: {form.errors.as_json()}"
+        )
+        # Chama o método 'form_invalid' da classe pai, que re-renderiza
+        # o template ('template_name') com o formulário preenchido
+        # e as mensagens de erro de cada campo.
+        return super().form_invalid(form)
