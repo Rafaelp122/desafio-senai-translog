@@ -26,7 +26,7 @@
     <div class="list-group">
       
       {% if perms.core.add_mileagerecord %}
-        <a href="#" class="list-group-item list-group-item-action">
+        <a href="{% url 'mileage_add' %}" class="list-group-item list-group-item-action">
           Registrar Quilometragem (RF005)
         </a>
       {% endif %}
