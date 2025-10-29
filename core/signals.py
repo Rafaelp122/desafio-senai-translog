@@ -60,20 +60,22 @@ def create_groups_on_migrate(sender, **kwargs):
         mecanico_group.permissions.set(mecanico_permissions)
 
         # --- Grupo Administrador ---
-        # O Administrador tem todas as permissões sobre os modelos do 'core'.
         admin_group, _ = Group.objects.get_or_create(name='Administrador')
 
-        # Busca todos os modelos do app 'core'
+        # Busca TODAS as permissões do app 'core'
         core_models = ['vehicle', 'maintenancerecord', 'mileagerecord']
         core_content_types = ContentType.objects.filter(
             app_label='core',
             model__in=core_models
         )
-
-        # Busca todas as permissões associadas a esses modelos
-        admin_permissions = Permission.objects.filter(
+        all_core_permissions = Permission.objects.filter(
             content_type__in=core_content_types
         )
+
+        admin_permissions = all_core_permissions.exclude(
+            codename='add_mileagerecord'
+        )
+
         admin_group.permissions.set(admin_permissions)
 
         logger.info(
